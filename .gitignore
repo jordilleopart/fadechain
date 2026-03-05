@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+relayer/node_modules/
+
+# Environment (contains private keys)
+.env
+relayer/.env
+
+# ZK build artifacts
+build/
+*.ptau
+*.zkey
+*.wtns
+
+# Voter credentials (secret!)
+zk-voting-credentials.json
+
+# OS
+.DS_Store
+Thumbs.db
