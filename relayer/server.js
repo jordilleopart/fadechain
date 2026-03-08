@@ -20,7 +20,7 @@ const { ethers } = require("ethers");
 require("dotenv").config({ path: __dirname + "/.env" });
 
 // ── Config ──
-const PORT = process.env.RELAYER_PORT || 3001;
+const PORT = process.env.PORT || process.env.RELAYER_PORT || 3001;
 const RPC_URL = process.env.SEPOLIA_RPC_URL || "https://rpc.sepolia.org";
 const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
 const VOTING_CONTRACT_ADDRESS = process.env.VOTING_CONTRACT_ADDRESS;

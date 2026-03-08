@@ -1,0 +1,17 @@
+# Render deployment config for the ZK Voting Relayer
+# Deploy: connect this repo on render.com → it auto-detects this file
+services:
+  - type: web
+    name: fadechain-relayer
+    runtime: node
+    rootDir: relayer
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: SEPOLIA_RPC_URL
+        value: https://rpc.sepolia.org
+      - key: RELAYER_PRIVATE_KEY
+        sync: false  # must be set manually in Render dashboard (secret)
+      - key: VOTING_CONTRACT_ADDRESS
+        sync: false  # must be set manually in Render dashboard
