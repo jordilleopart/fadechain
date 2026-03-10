@@ -101,57 +101,57 @@
 
   <!-- ════════ Mode selector ════════ -->
   <div class="card">
-    <h2>🔌 Modo de conexión</h2>
+    <h2>🔌 Connection Mode </h2>
     <div class="mode-selector">
-      <button id="btnModeRelayer" class="active" onclick="setMode('relayer')">Via Relayer (privado)</button>
-      <button id="btnModeDirect" class="secondary" onclick="setMode('direct')">Directo con MetaMask</button>
+      <button id="btnModeRelayer" class="active" onclick="setMode('relayer')"> Relayer (private)</button>
+      <button id="btnModeDirect" class="secondary" onclick="setMode('direct')"> MetaMask (public)</button>
     </div>
 
     <div id="relayerConfig">
-      <label style="font-size:0.85em;color:var(--muted);">URL del Relayer</label>
+      <label style="font-size:0.85em;color:var(--muted);">Relayer URL</label>
       <input type="text" id="relayerUrl" value="https://hackathon-cryptography-and-security.onrender.com" placeholder="https://tu-relayer.onrender.com" />
     </div>
 
     <div id="directConfig" class="hidden">
-      <label style="font-size:0.85em;color:var(--muted);">Dirección del contrato ZKTimeDecayVoting</label>
+      <label style="font-size:0.85em;color:var(--muted);">Address of the ZKTimeDecayVoting Contract</label>
       <input type="text" id="contractAddr" placeholder="0x..." />
-      <button onclick="connectMetaMask()">🦊 Conectar MetaMask</button>
+      <button onclick="connectMetaMask()">🦊 Connect to MetaMask</button>
       <div id="walletInfo" style="font-size:0.85em;color:var(--muted);"></div>
     </div>
   </div>
 
   <!-- ════════ Status Card ════════ -->
   <div class="card">
-    <h2>📊 Estado <span class="phase-badge" id="phaseBadge">...</span></h2>
+    <h2>📊 State <span class="phase-badge" id="phaseBadge">...</span></h2>
     <div class="info-grid">
-      <div class="info-item"><span>Fase</span><div id="phaseText">Cargando...</div></div>
-      <div class="info-item"><span>Peso actual del voto</span><div id="weightText">–</div></div>
-      <div class="info-item"><span>Inicio votación</span><div id="startText">–</div></div>
-      <div class="info-item"><span>Fin votación</span><div id="endText">–</div></div>
-      <div class="info-item"><span>Votos emitidos</span><div id="votesText">–</div></div>
+      <div class="info-item"><span>Phase</span><div id="phaseText">Loading...</div></div>
+      <div class="info-item"><span>Current Vote Weight</span><div id="weightText">–</div></div>
+      <div class="info-item"><span>Vote Begin</span><div id="startText">–</div></div>
+      <div class="info-item"><span>Vote End</span><div id="endText">–</div></div>
+      <div class="info-item"><span>Votes Cast</span><div id="votesText">–</div></div>
       <div class="info-item"><span>Merkle Root</span><div id="rootText" style="font-size:0.7em;word-break:break-all;">–</div></div>
     </div>
     <div class="weight-bar"><div class="weight-fill" id="weightBar" style="width:0%"></div></div>
-    <button class="secondary" onclick="refreshStatus()" style="margin-top:8px;">🔄 Refrescar</button>
+    <button class="secondary" onclick="refreshStatus()" style="margin-top:8px;">🔄 Refresh</button>
   </div>
 
   <!-- ════════ Tallies ════════ -->
   <div class="card">
-    <h2>📈 Resultados en tiempo real</h2>
-    <div id="talliesContainer"><em>Sin datos</em></div>
+    <h2>📈 Real-time Results</h2>
+    <div id="talliesContainer"><em>No Data</em></div>
   </div>
 
   <!-- ════════ Step 1: Credentials ════════ -->
   <div class="card">
-    <h2>1️⃣ Generar Credenciales</h2>
+    <h2>1️⃣ Generate Credentials</h2>
     <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px;">
-      Genera <strong>nullifier</strong> + <strong>secret</strong> aleatorios.
-      El <strong>commitment = keccak256(nullifier, secret) % FIELD</strong> se usa para registrarte.
+      Generate random <strong>nullifier</strong> + <strong>secret</strong>.
+      The <strong>commitment = keccak256(nullifier, secret) % FIELD</strong> is used to register.
     </p>
-    <button onclick="generateCredentials()">🎲 Generar Credenciales</button>
+    <button onclick="generateCredentials()">🎲 Generate Credentials</button>
     <div id="credentialsBox" class="credentials-box hidden"></div>
-    <div class="warning hidden" id="saveWarning">⚠️ GUARDA ESTAS CREDENCIALES. Las necesitas para votar.</div>
-    <button id="btnDownload" class="hidden secondary" onclick="downloadCredentials()">💾 Descargar JSON</button>
+    <div class="warning hidden" id="saveWarning">⚠️ SAVE THESE CREDENTIALS. You need them to vote.</div>
+    <button id="btnDownload" class="hidden secondary" onclick="downloadCredentials()">💾 Download JSON</button>
     <br/>
     <label style="font-size:0.85em;color:var(--muted);">Cargar credenciales guardadas:</label>
     <input type="file" id="loadCredsFile" accept=".json" onchange="loadCredentials(event)" />
@@ -159,36 +159,36 @@
 
   <!-- ════════ Step 2: Register ════════ -->
   <div class="card">
-    <h2>2️⃣ Registrar Commitment</h2>
+    <h2>2️⃣ Commitment Registration</h2>
     <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px;">
-      Envía tu commitment al contrato. Solo posible en fase de registro.
+      Send your commitment to the contract. Only possible during the registration phase.
     </p>
-    <button id="btnRegister" onclick="registerVoter()" disabled>📝 Registrar</button>
+    <button id="btnRegister" onclick="registerVoter()" disabled>📝 Register</button>
   </div>
 
   <!-- ════════ Step 3: Vote ════════ -->
   <div class="card">
-    <h2>3️⃣ Votar</h2>
+    <h2>3️⃣ Vote</h2>
     <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px;">
-      En modo demo (MockVerifier), la prueba ZK se simula.
-      Selecciona tu opción y vota — el peso depende de cuándo votes.
+      In demo mode (MockVerifier), the ZK proof is simulated.
+      Select your option and vote — the weight depends on when you vote.
     </p>
-    <label style="font-size:0.85em;color:var(--muted);">Opción de voto</label>
+    <label style="font-size:0.85em;color:var(--muted);">Vote Option</label>
     <select id="voteChoice">
-      <option value="0">Opción 0</option>
-      <option value="1">Opción 1</option>
-      <option value="2">Opción 2</option>
+      <option value="0">Option 0</option>
+      <option value="1">Option 1</option>
+      <option value="2">Option 2</option>
     </select>
-    <button id="btnVote" onclick="castVote()" disabled>🗳️ Votar</button>
+    <button id="btnVote" onclick="castVote()" disabled>🗳️ Vote</button>
   </div>
 
   <!-- ════════ Admin ════════ -->
   <div class="card">
     <h2>🔐 Admin</h2>
     <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px;">
-      Solo el admin (deployer) puede cerrar el registro.
+      Only the admin (deployer) can close the registration.
     </p>
-    <button class="danger" onclick="closeRegistration()">⛔ Cerrar Registro</button>
+    <button class="danger" onclick="closeRegistration()">⛔ Close Registration</button>
   </div>
 
   <!-- ════════ Log ════════ -->
@@ -256,20 +256,20 @@ function setMode(m) {
 }
 
 async function connectMetaMask() {
-  if (!window.ethereum) { log("❌ MetaMask no está instalado", "error"); return; }
+  if (!window.ethereum) { log("❌ MetaMask is not installed", "error"); return; }
   try {
     provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
     const addr = await signer.getAddress();
     const network = await provider.getNetwork();
-    document.getElementById("walletInfo").textContent = `Conectado: ${addr} (Chain: ${network.chainId})`;
-    log(`🦊 MetaMask conectado: ${addr}`, "success");
+    document.getElementById("walletInfo").textContent = `Connected: ${addr} (Chain: ${network.chainId})`;
+    log(`🦊 MetaMask connected: ${addr}`, "success");
 
     const contractAddr = document.getElementById("contractAddr").value;
     if (contractAddr) {
       votingContract = new ethers.Contract(contractAddr, VOTING_ABI, signer);
-      log(`📄 Contrato configurado: ${contractAddr}`, "info");
+      log(`📄 Contract configured: ${contractAddr}`, "info");
     }
     refreshStatus();
   } catch (e) {
@@ -369,7 +369,7 @@ async function refreshStatusDirect() {
 }
 
 function updateUI(data) {
-  const phaseMap = { registration: "📝 Registro", waiting: "⏳ Esperando", voting: "🗳️ Votando", ended: "🏁 Finalizado" };
+  const phaseMap = { registration: "📝 Registration", waiting: "⏳ Waiting", voting: "🗳️ Voting", ended: "🏁 Ended" };
   document.getElementById("phaseText").textContent = phaseMap[data.phase] || data.phase;
   document.getElementById("phaseBadge").textContent = data.phase;
   document.getElementById("phaseBadge").className = "phase-badge phase-" + data.phase;
@@ -386,7 +386,7 @@ function updateUI(data) {
   if (select.options.length !== data.numChoices) {
     select.innerHTML = "";
     for (let i = 0; i < data.numChoices; i++) {
-      select.innerHTML += `<option value="${i}">Opción ${i}</option>`;
+      select.innerHTML += `<option value="${i}">Option ${i}</option>`;
     }
   }
 
@@ -398,14 +398,14 @@ function updateUI(data) {
 
 function renderTallies(tallies, n) {
   const c = document.getElementById("talliesContainer");
-  if (!tallies || !tallies.length) { c.innerHTML = "<em>Sin datos</em>"; return; }
+  if (!tallies || !tallies.length) { c.innerHTML = "<em>No Data</em>"; return; }
   const max = Math.max(...tallies.map(Number), 1);
   let html = "";
   for (let i = 0; i < n; i++) {
     const v = Number(tallies[i] || 0);
     const pct = (v / max * 100).toFixed(1);
     const hr = (v / 1e18).toFixed(4);
-    html += `<div class="tally-bar"><div class="label">Opción ${i}</div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><div class="value">${hr}</div></div>`;
+    html += `<div class="tally-bar"><div class="label">Option ${i}</div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><div class="value">${hr}</div></div>`;
   }
   c.innerHTML = html;
 }
@@ -414,7 +414,7 @@ function renderTallies(tallies, n) {
 //  Step 1: Generate Credentials
 // ═══════════════════════════════════════════════════════════════
 function generateCredentials() {
-  log("Generando credenciales...", "info");
+  log("Generating credentials...", "info");
   const nullifierBytes = crypto.getRandomValues(new Uint8Array(31));
   const secretBytes = crypto.getRandomValues(new Uint8Array(31));
   const nullifier = bytesToBigInt(nullifierBytes);
@@ -436,7 +436,7 @@ function generateCredentials() {
   document.getElementById("saveWarning").classList.remove("hidden");
   document.getElementById("btnDownload").classList.remove("hidden");
 
-  log("✅ Credenciales generadas. Commitment: " + credentials.commitment.slice(0, 20) + "...", "success");
+  log("✅ Credentials generated. Commitment: " + credentials.commitment.slice(0, 20) + "...", "success");
 
   if (contractStatus) {
     document.getElementById("btnRegister").disabled = contractStatus.phase !== "registration";
@@ -476,7 +476,7 @@ function downloadCredentials() {
   const blob = new Blob([JSON.stringify(credentials, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = "zk-voting-credentials.json"; a.click();
-  log("💾 Descargadas", "info");
+  log("💾 Credentials downloaded", "info");
 }
 
 function loadCredentials(event) {
@@ -487,7 +487,7 @@ function loadCredentials(event) {
       credentials = JSON.parse(e.target.result);
       document.getElementById("credentialsBox").classList.remove("hidden");
       renderCredentialsBox(credentials);
-      log("✅ Credenciales cargadas", "success");
+      log("✅ Credentials loaded", "success");
       refreshStatus();
     } catch (err) { log("❌ " + err.message, "error"); }
   };
@@ -498,28 +498,28 @@ function loadCredentials(event) {
 //  Step 2: Register
 // ═══════════════════════════════════════════════════════════════
 async function registerVoter() {
-  if (!credentials) { log("❌ Genera credenciales primero", "error"); return; }
+  if (!credentials) { log("❌ Generate credentials first", "error"); return; }
 
   if (mode === "relayer") {
     try {
       const url = document.getElementById("relayerUrl").value;
-      log("📤 Registrando vía relayer...", "info");
+      log("📤 Registering via relayer...", "info");
       const resp = await fetch(url + "/api/register", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ commitment: credentials.commitment }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error);
-      log("✅ Registrado! TX: " + data.txHash, "success");
+      log("✅ Registered! TX: " + data.txHash, "success");
     } catch (e) { log("❌ " + e.message, "error"); }
   } else {
     try {
-      if (!votingContract) { log("❌ Conecta MetaMask primero", "error"); return; }
-      log("📤 Registrando vía MetaMask...", "info");
+      if (!votingContract) { log("❌ Connect MetaMask first", "error"); return; }
+      log("📤 Registering via MetaMask...", "info");
       const tx = await votingContract.registerVoter(credentials.commitment);
-      log("⏳ TX enviada: " + tx.hash, "info");
+      log("⏳ TX sent: " + tx.hash, "info");
       await tx.wait();
-      log("✅ Registrado!", "success");
+      log("✅ Registered!", "success");
     } catch (e) { log("❌ " + e.message, "error"); }
   }
   refreshStatus();
@@ -529,7 +529,7 @@ async function registerVoter() {
 //  Step 3: Vote (with dummy proof for MockVerifier)
 // ═══════════════════════════════════════════════════════════════
 async function castVote() {
-  if (!credentials) { log("❌ Genera credenciales primero", "error"); return; }
+  if (!credentials) { log("❌ Generate credentials first", "error"); return; }
 
   const choice = document.getElementById("voteChoice").value;
   const root = contractStatus?.merkleRoot || "0";
@@ -543,23 +543,23 @@ async function castVote() {
   if (mode === "relayer") {
     try {
       const url = document.getElementById("relayerUrl").value;
-      log(`📤 Enviando voto (opción ${choice}) vía relayer...`, "info");
+      log(`📤 Sending vote (option ${choice}) via relayer...`, "info");
       const resp = await fetch(url + "/api/relay-vote", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pA, pB, pC, root, nullifierHash, voteChoice: choice }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error);
-      log("🎉 ¡VOTO EMITIDO! TX: " + data.txHash, "success");
+      log("🎉 Vote cast! TX: " + data.txHash, "success");
     } catch (e) { log("❌ " + e.message, "error"); }
   } else {
     try {
-      if (!votingContract) { log("❌ Conecta MetaMask primero", "error"); return; }
-      log(`📤 Enviando voto (opción ${choice}) vía MetaMask...`, "info");
+      if (!votingContract) { log("❌ Connect MetaMask first", "error"); return; }
+      log(`📤 Sending vote (option ${choice}) via MetaMask...`, "info");
       const tx = await votingContract.castVote(pA, pB, pC, root, nullifierHash, Number(choice));
       log("⏳ TX: " + tx.hash, "info");
       await tx.wait();
-      log("🎉 ¡VOTO EMITIDO!", "success");
+      log("🎉 Vote cast!", "success");
     } catch (e) { log("❌ " + e.message, "error"); }
   }
   refreshStatus();
@@ -570,15 +570,15 @@ async function castVote() {
 // ═══════════════════════════════════════════════════════════════
 async function closeRegistration() {
   if (mode === "direct") {
-    if (!votingContract) { log("❌ Conecta MetaMask primero", "error"); return; }
+    if (!votingContract) { log("❌ Connect MetaMask first", "error"); return; }
     try {
-      log("⏳ Cerrando registro...", "info");
+      log("⏳ Closing registration...", "info");
       const tx = await votingContract.closeRegistration();
       await tx.wait();
-      log("✅ Registro cerrado!", "success");
+      log("✅ Registration closed!", "success");
     } catch (e) { log("❌ " + e.message, "error"); }
   } else {
-    log("⚠️ Cerrar registro requiere modo MetaMask directo con la cuenta admin", "error");
+    log("⚠️ Closing registration requires direct MetaMask mode with the admin account", "error");
   }
   refreshStatus();
 }
