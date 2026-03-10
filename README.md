@@ -272,7 +272,11 @@ flowchart LR
 
 5. **View results** — after `votingEnd`, click **View Results** to read the weighted tally for each option directly from the contract.
 
-> **Note:** The demo uses a `MockGroth16Verifier` that always returns `true`, enabling a full end-to-end flow without running the Circom circuit or a trusted setup ceremony. For production use, compile `circuits/vote.circom` with `circom` + `snarkjs`, run the two-phase trusted setup, and replace the mock verifier with the exported `Groth16Verifier.sol`.
+> [!NOTE]
+> The demo uses a `MockGroth16Verifier` that always returns `true`, enabling a full end-to-end flow without running the Circom circuit or a trusted setup ceremony. For production use, compile `circuits/vote.circom` with `circom` + `snarkjs`, run the two-phase trusted setup, and replace the mock verifier with the exported `Groth16Verifier.sol`.
 
+> [!IMPORTANT]
+> 
+> The ZK-SNARK system is not fully implemented in this demo. Currently, the contract only verifies the `nullifierHash` to prevent double voting — the full Merkle Tree membership proof is not validated on-chain. Instead, a `MockGroth16Verifier` that always returns `true` is used, allowing the complete flow (registration, time-weighted voting, and tally) to be tested without compiling the Circom circuit or running a trusted setup ceremony. The full ZK circuit is implemented in `vote.circom` and covers commitment computation via `Poseidon(nullifier, secret)`, Merkle membership proof, `nullifierHash` constraint, and `voteChoice` binding. For production, this would require compiling the circuit with `circom` + `snarkjs`, running a trusted setup ceremony (Phase 1 + Phase 2), replacing `MockGroth16Verifier` with the real `Groth16Verifier.sol`, and integrating proof generation in the frontend via `snarkjs`.
 ---
 *FadeChain — UPF Hackathon 2026, Cryptography & Security. Team: Gorka Hernandez · Sara López · Arnau Carbonell · Jordi Lleopart.*
