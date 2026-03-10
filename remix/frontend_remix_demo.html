@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZK Time-Decay Voting — Remix Demo</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --accent: #6c63ff;
+      --accent2: #e94560;
+      --text: #eee;
+      --muted: #888;
+      --success: #2ecc71;
+      --warn: #f39c12;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 850px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 8px; font-size: 1.8em; }
+    .subtitle { text-align: center; color: var(--muted); margin-bottom: 30px; font-size: 0.95em; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid #2a2a4a;
+    }
+    .card h2 { font-size: 1.15em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .phase-badge {
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 0.75em; font-weight: bold; text-transform: uppercase;
+    }
+    .phase-registration { background: var(--accent); }
+    .phase-waiting { background: var(--warn); color: #000; }
+    .phase-voting { background: var(--success); color: #000; }
+    .phase-ended { background: var(--accent2); }
+    .weight-bar { height: 24px; background: #2a2a4a; border-radius: 12px; overflow: hidden; margin: 10px 0; }
+    .weight-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 1s; border-radius: 12px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .info-item { font-size: 0.9em; }
+    .info-item span { color: var(--muted); display: block; font-size: 0.8em; }
+    input, select, button, textarea {
+      width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #2a2a4a;
+      background: #0f0f1a; color: var(--text); font-size: 1em; margin-bottom: 12px;
+    }
+    button { cursor: pointer; background: var(--accent); border: none; font-weight: bold; transition: opacity 0.2s; }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.danger { background: var(--accent2); }
+    button.secondary { background: #2a2a4a; }
+    .log {
+      background: #0a0a16; border: 1px solid #2a2a4a; border-radius: 8px;
+      padding: 12px; max-height: 250px; overflow-y: auto;
+      font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.8em;
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .log-entry { padding: 2px 0; }
+    .log-success { color: var(--success); }
+    .log-error { color: var(--accent2); }
+    .log-info { color: var(--accent); }
+    .tally-bar { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .tally-bar .bar { flex: 1; height: 20px; background: #2a2a4a; border-radius: 10px; overflow: hidden; }
+    .tally-bar .fill { height: 100%; background: var(--accent); border-radius: 10px; transition: width 0.5s; }
+    .tally-bar .label { min-width: 80px; font-size: 0.85em; }
+    .tally-bar .value { min-width: 60px; text-align: right; font-size: 0.85em; color: var(--muted); }
+    .credentials-box {
+      background: #0a0a16; border: 1px dashed var(--warn); border-radius: 8px;
+      padding: 12px; margin: 12px 0; font-family: monospace; font-size: 0.8em; word-break: break-all;
+      max-height: 180px; overflow-y: auto;
+    }
+    .cred-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #2a2a4a; }
+    .cred-row:last-child { border-bottom: none; }
+    .cred-label { color: var(--accent); font-weight: bold; min-width: 110px; }
+    .cred-value { color: var(--text); cursor: pointer; }
+    .cred-value:hover { color: var(--warn); }
+    .cred-copy-hint { font-size: 0.7em; color: var(--muted); text-align: right; margin-top: 4px; }
+    .hidden { display: none; }
+    .warning {
+      background: rgba(243, 156, 18, 0.1); border: 1px solid var(--warn);
+      border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.85em; color: var(--warn);
+    }
+    .mode-selector { display: flex; gap: 8px; margin-bottom: 16px; }
+    .mode-selector button { flex: 1; }
+    .mode-selector button.active { background: var(--success); color: #000; }
+    .inline-row { display: flex; gap: 8px; }
+    .inline-row > * { flex: 1; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🗳️ ZK Time-Decay Voting</h1>
+  <p class="subtitle">Hackathon UPF 2026 — Criptografía y Seguridad — Remix Demo</p>
+
+  <!-- ════════ Mode selector ════════ -->
+  <div class="card">
+    <h2>🔌 Modo de conexión</h2>
+    <div class="mode-selector">
+      <button id="btnModeRelayer" class="active" onclick="setMode('relayer')">Via Relayer (privado)</button>
+      <button id="btnModeDirect" class="secondary" onclick="setMode('direct')">Directo con MetaMask</button>
+    </div>
+
+    <div id="relayerConfig">
+      <label style="font-size:0.85em;color:var(--muted);">URL del Relayer</label>
+      <input type="text" id="relayerUrl" value="http://localhost:3001" />
+    </div>
+
+    <div id="directConfig" class="hidden">
+      <label style="font-size:0.85em;color:var(--muted);">Dirección del contrato ZKTimeDecayVoting</label>
+      <input type="text" id="contractAddr" placeholder="0x..." />
+      <button onclick="connectMetaMask()">🦊 Conectar MetaMask</button>
+      <div id="walletInfo" style="font-size:0.85em;color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <!-- ════════ Status Card ════════ -->
+  <div class="card">
+    <h2>📊 Estado <span class="phase-badge" id="phaseBadge">...</span></h2>
+    <div class="info-grid">
+      <div class="info-item"><span>Fase</span><div id="phaseText">Cargando...</div></div>
+      <div class="info-item"><span>Peso actual del voto</span><div id="weightText">–</div></div>
+      <div class="info-item"><span>Inicio votación</span><div id="startText">–</div></div>
+      <div class="info-item"><span>Fin votación</span><div id="endText">–</div></div>
+      <div class="info-item"><span>Votos emitidos</span><div id="votesText">–</div></div>
+      <div class="info-item"><span>Merkle Root</span><div id="rootText" style="font-size:0.7em;word-break:break-all;">–</div></div>
+    </div>
+    <div class="weight-bar"><div class="weight-fill" id="weightBar" style="width:0%"></div></div>
+    <button class="secondary" onclick="refreshStatus()" style="margin-top:8px;">🔄 Refrescar</button>
+  </div>
+
+  <!-- ════════ Tallies ════════ -->
+  <div class="card">
+    <h2>📈 Resultados en tiempo real</h2>
+    <div id="talliesContainer"><em>Sin datos</em></div>
+  </div>
+
+  <!-- ════════ Step 1: Credentials ════════ -->
+  <div class="card">
+    <h2>1️⃣ Generar Credenciales</h2>
+    <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px;">
+      Genera <strong>nullifier</strong> + <strong>secret</strong> aleatorios.
+      El <strong>commitment = keccak256(nullifier, secret) % FIELD</strong> se usa para registrarte.
+    </p>
+    <button onclick="generateCredentials()">🎲 Generar Credenciales</button>
+    <div id="credentialsBox" class="credentials-box hidden"></div>
+    <div class="warning hidden" id="saveWarning">⚠️ GUARDA ESTAS CREDENCIALES. Las necesitas para votar.</div>
+    <button id="btnDownload" class="hidden secondary" onclick="downloadCredentials()">💾 Descargar JSON</button>
+    <br/>
+    <label style="font-size:0.85em;color:var(--muted);">Cargar credenciales guardadas:</label>
+    <input type="file" id="loadCredsFile" accept=".json" onchange="loadCredentials(event)" />
+  </div>
+
+  <!-- ════════ Step 2: Register ════════ -->
+  <div class="card">
+    <h2>2️⃣ Registrar Commitment</h2>
+    <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px;">
+      Envía tu commitment al contrato. Solo posible en fase de registro.
+    </p>
+    <button id="btnRegister" onclick="registerVoter()" disabled>📝 Registrar</button>
+  </div>
+
+  <!-- ════════ Step 3: Vote ════════ -->
+  <div class="card">
+    <h2>3️⃣ Votar</h2>
+    <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px;">
+      En modo demo (MockVerifier), la prueba ZK se simula.
+      Selecciona tu opción y vota — el peso depende de cuándo votes.
+    </p>
+    <label style="font-size:0.85em;color:var(--muted);">Opción de voto</label>
+    <select id="voteChoice">
+      <option value="0">Opción 0</option>
+      <option value="1">Opción 1</option>
+      <option value="2">Opción 2</option>
+    </select>
+    <button id="btnVote" onclick="castVote()" disabled>🗳️ Votar</button>
+  </div>
+
+  <!-- ════════ Admin ════════ -->
+  <div class="card">
+    <h2>🔐 Admin</h2>
+    <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px;">
+      Solo el admin (deployer) puede cerrar el registro.
+    </p>
+    <button class="danger" onclick="closeRegistration()">⛔ Cerrar Registro</button>
+  </div>
+
+  <!-- ════════ Log ════════ -->
+  <div class="card">
+    <h2>📋 Log</h2>
+    <div class="log" id="logBox"></div>
+  </div>
+</div>
+
+<!-- ethers.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════════════════
+let mode = "relayer"; // "relayer" | "direct"
+let credentials = null;
+let contractStatus = null;
+
+// MetaMask / direct mode
+let provider = null;
+let signer = null;
+let votingContract = null;
+
+const SNARK_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+
+const VOTING_ABI = [
+  "function registerVoter(uint256 commitment) external",
+  "function closeRegistration() external",
+  "function castVote(uint[2] _pA, uint[2][2] _pB, uint[2] _pC, uint256 _root, uint256 _nullifierHash, uint256 _voteChoice) external",
+  "function getCurrentWeight() external view returns (uint256)",
+  "function getVoteTally(uint256 choice) external view returns (uint256)",
+  "function getMerkleRoot() external view returns (uint256)",
+  "function numChoices() external view returns (uint256)",
+  "function votingStart() external view returns (uint256)",
+  "function votingEnd() external view returns (uint256)",
+  "function registrationOpen() external view returns (bool)",
+  "function totalVoteCount() external view returns (uint256)",
+  "function knownRoots(uint256) external view returns (bool)",
+  "function usedNullifiers(uint256) external view returns (bool)",
+  "function getResults() external view returns (uint256[], uint256)",
+  "event VoterRegistered(uint256 indexed commitment, uint256 leafIndex, uint256 newRoot)",
+  "event VoteCast(uint256 indexed nullifierHash, uint256 choice, uint256 weight, uint256 timestamp)",
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  Init
+// ═══════════════════════════════════════════════════════════════
+refreshStatus();
+setInterval(refreshStatus, 15000);
+
+// ═══════════════════════════════════════════════════════════════
+//  Mode switching
+// ═══════════════════════════════════════════════════════════════
+function setMode(m) {
+  mode = m;
+  document.getElementById("relayerConfig").classList.toggle("hidden", m !== "relayer");
+  document.getElementById("directConfig").classList.toggle("hidden", m !== "direct");
+  document.getElementById("btnModeRelayer").classList.toggle("active", m === "relayer");
+  document.getElementById("btnModeRelayer").classList.toggle("secondary", m !== "relayer");
+  document.getElementById("btnModeDirect").classList.toggle("active", m === "direct");
+  document.getElementById("btnModeDirect").classList.toggle("secondary", m !== "direct");
+  log(`Modo cambiado a: ${m === "relayer" ? "Relayer (privado)" : "MetaMask directo"}`, "info");
+}
+
+async function connectMetaMask() {
+  if (!window.ethereum) { log("❌ MetaMask no está instalado", "error"); return; }
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    const addr = await signer.getAddress();
+    const network = await provider.getNetwork();
+    document.getElementById("walletInfo").textContent = `Conectado: ${addr} (Chain: ${network.chainId})`;
+    log(`🦊 MetaMask conectado: ${addr}`, "success");
+
+    const contractAddr = document.getElementById("contractAddr").value;
+    if (contractAddr) {
+      votingContract = new ethers.Contract(contractAddr, VOTING_ABI, signer);
+      log(`📄 Contrato configurado: ${contractAddr}`, "info");
+    }
+    refreshStatus();
+  } catch (e) {
+    log("❌ Error MetaMask: " + e.message, "error");
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Logging
+// ═══════════════════════════════════════════════════════════════
+function log(msg, type = "") {
+  const el = document.getElementById("logBox");
+  const entry = document.createElement("div");
+  entry.className = "log-entry" + (type ? " log-" + type : "");
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Hash function — matches PoseidonT3Stub (keccak256 % FIELD)
+// ═══════════════════════════════════════════════════════════════
+function stubPoseidon2(a, b) {
+  const packed = ethers.solidityPacked(["uint256", "uint256"], [a, b]);
+  const hash = BigInt(ethers.keccak256(packed));
+  return hash % SNARK_FIELD;
+}
+
+function stubPoseidon1(a) {
+  // For nullifierHash, we use keccak(a, 0) to be simple
+  return stubPoseidon2(a, 0n);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Status Polling
+// ═══════════════════════════════════════════════════════════════
+async function refreshStatus() {
+  try {
+    if (mode === "relayer") {
+      await refreshStatusRelayer();
+    } else {
+      await refreshStatusDirect();
+    }
+  } catch (e) {
+    document.getElementById("phaseText").textContent = "⚠️ No conectado";
+  }
+}
+
+async function refreshStatusRelayer() {
+  const url = document.getElementById("relayerUrl").value;
+  const resp = await fetch(url + "/api/status");
+  if (!resp.ok) throw new Error("Relayer no disponible");
+  const data = await resp.json();
+  contractStatus = data;
+  updateUI(data);
+}
+
+async function refreshStatusDirect() {
+  if (!votingContract) {
+    const addr = document.getElementById("contractAddr").value;
+    if (!addr || !signer) return;
+    votingContract = new ethers.Contract(addr, VOTING_ABI, signer);
+  }
+  const [regOpen, vStart, vEnd, nChoices, root, totalVotes] = await Promise.all([
+    votingContract.registrationOpen(),
+    votingContract.votingStart(),
+    votingContract.votingEnd(),
+    votingContract.numChoices(),
+    votingContract.getMerkleRoot(),
+    votingContract.totalVoteCount(),
+  ]);
+  let weight = 0n;
+  try { weight = await votingContract.getCurrentWeight(); } catch {}
+
+  const tallies = [];
+  for (let i = 0; i < Number(nChoices); i++) {
+    tallies.push((await votingContract.getVoteTally(i)).toString());
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  let phase = "unknown";
+  if (regOpen) phase = "registration";
+  else if (now < Number(vStart)) phase = "waiting";
+  else if (now < Number(vEnd)) phase = "voting";
+  else phase = "ended";
+
+  const data = {
+    phase, registrationOpen: regOpen,
+    votingStart: Number(vStart), votingEnd: Number(vEnd),
+    numChoices: Number(nChoices), merkleRoot: root.toString(),
+    currentWeight: weight.toString(),
+    currentWeightPercent: (Number(weight) / 1e16).toFixed(2),
+    totalVotes: Number(totalVotes), tallies,
+  };
+  contractStatus = data;
+  updateUI(data);
+}
+
+function updateUI(data) {
+  const phaseMap = { registration: "📝 Registro", waiting: "⏳ Esperando", voting: "🗳️ Votando", ended: "🏁 Finalizado" };
+  document.getElementById("phaseText").textContent = phaseMap[data.phase] || data.phase;
+  document.getElementById("phaseBadge").textContent = data.phase;
+  document.getElementById("phaseBadge").className = "phase-badge phase-" + data.phase;
+  document.getElementById("weightText").textContent = data.currentWeightPercent + "%";
+  document.getElementById("startText").textContent = new Date(data.votingStart * 1000).toLocaleString();
+  document.getElementById("endText").textContent = new Date(data.votingEnd * 1000).toLocaleString();
+  document.getElementById("votesText").textContent = data.totalVotes;
+  document.getElementById("rootText").textContent = data.merkleRoot;
+
+  const pct = Math.min(100, Math.max(0, parseFloat(data.currentWeightPercent)));
+  document.getElementById("weightBar").style.width = pct + "%";
+
+  const select = document.getElementById("voteChoice");
+  if (select.options.length !== data.numChoices) {
+    select.innerHTML = "";
+    for (let i = 0; i < data.numChoices; i++) {
+      select.innerHTML += `<option value="${i}">Opción ${i}</option>`;
+    }
+  }
+
+  renderTallies(data.tallies, data.numChoices);
+
+  document.getElementById("btnRegister").disabled = !credentials || data.phase !== "registration";
+  document.getElementById("btnVote").disabled = !credentials || data.phase !== "voting";
+}
+
+function renderTallies(tallies, n) {
+  const c = document.getElementById("talliesContainer");
+  if (!tallies || !tallies.length) { c.innerHTML = "<em>Sin datos</em>"; return; }
+  const max = Math.max(...tallies.map(Number), 1);
+  let html = "";
+  for (let i = 0; i < n; i++) {
+    const v = Number(tallies[i] || 0);
+    const pct = (v / max * 100).toFixed(1);
+    const hr = (v / 1e18).toFixed(4);
+    html += `<div class="tally-bar"><div class="label">Opción ${i}</div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><div class="value">${hr}</div></div>`;
+  }
+  c.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Step 1: Generate Credentials
+// ═══════════════════════════════════════════════════════════════
+function generateCredentials() {
+  log("Generando credenciales...", "info");
+  const nullifierBytes = crypto.getRandomValues(new Uint8Array(31));
+  const secretBytes = crypto.getRandomValues(new Uint8Array(31));
+  const nullifier = bytesToBigInt(nullifierBytes);
+  const secret = bytesToBigInt(secretBytes);
+
+  // Match PoseidonT3Stub: keccak256(abi.encodePacked(a,b)) % FIELD
+  const commitment = stubPoseidon2(nullifier, secret);
+  const nullifierHash = stubPoseidon1(nullifier);
+
+  credentials = {
+    nullifier: nullifier.toString(),
+    secret: secret.toString(),
+    commitment: commitment.toString(),
+    nullifierHash: nullifierHash.toString(),
+  };
+
+  document.getElementById("credentialsBox").classList.remove("hidden");
+  renderCredentialsBox(credentials);
+  document.getElementById("saveWarning").classList.remove("hidden");
+  document.getElementById("btnDownload").classList.remove("hidden");
+
+  log("✅ Credenciales generadas. Commitment: " + credentials.commitment.slice(0, 20) + "...", "success");
+
+  if (contractStatus) {
+    document.getElementById("btnRegister").disabled = contractStatus.phase !== "registration";
+    document.getElementById("btnVote").disabled = contractStatus.phase !== "voting";
+  }
+}
+
+function truncateNum(s) {
+  if (s.length <= 20) return s;
+  return s.slice(0, 10) + "..." + s.slice(-10) + " (" + s.length + " digits)";
+}
+
+function renderCredentialsBox(creds) {
+  const box = document.getElementById("credentialsBox");
+  const labels = [
+    ["Nullifier", creds.nullifier],
+    ["Secret", creds.secret],
+    ["Commitment", creds.commitment],
+    ["NullifierHash", creds.nullifierHash],
+  ];
+  let html = '';
+  for (const [label, val] of labels) {
+    html += `<div class="cred-row"><span class="cred-label">${label}</span><span class="cred-value" title="Click to copy full value" onclick="navigator.clipboard.writeText('${val}');log('Copied ${label}','info')">${truncateNum(val)}</span></div>`;
+  }
+  html += '<div class="cred-copy-hint">Click any value to copy full number</div>';
+  box.innerHTML = html;
+}
+
+function bytesToBigInt(bytes) {
+  let hex = "0x";
+  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+  return BigInt(hex);
+}
+
+function downloadCredentials() {
+  if (!credentials) return;
+  const blob = new Blob([JSON.stringify(credentials, null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = "zk-voting-credentials.json"; a.click();
+  log("💾 Descargadas", "info");
+}
+
+function loadCredentials(event) {
+  const f = event.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = function(e) {
+    try {
+      credentials = JSON.parse(e.target.result);
+      document.getElementById("credentialsBox").classList.remove("hidden");
+      renderCredentialsBox(credentials);
+      log("✅ Credenciales cargadas", "success");
+      refreshStatus();
+    } catch (err) { log("❌ " + err.message, "error"); }
+  };
+  r.readAsText(f);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Step 2: Register
+// ═══════════════════════════════════════════════════════════════
+async function registerVoter() {
+  if (!credentials) { log("❌ Genera credenciales primero", "error"); return; }
+
+  if (mode === "relayer") {
+    try {
+      const url = document.getElementById("relayerUrl").value;
+      log("📤 Registrando vía relayer...", "info");
+      const resp = await fetch(url + "/api/register", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commitment: credentials.commitment }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error);
+      log("✅ Registrado! TX: " + data.txHash, "success");
+    } catch (e) { log("❌ " + e.message, "error"); }
+  } else {
+    try {
+      if (!votingContract) { log("❌ Conecta MetaMask primero", "error"); return; }
+      log("📤 Registrando vía MetaMask...", "info");
+      const tx = await votingContract.registerVoter(credentials.commitment);
+      log("⏳ TX enviada: " + tx.hash, "info");
+      await tx.wait();
+      log("✅ Registrado!", "success");
+    } catch (e) { log("❌ " + e.message, "error"); }
+  }
+  refreshStatus();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Step 3: Vote (with dummy proof for MockVerifier)
+// ═══════════════════════════════════════════════════════════════
+async function castVote() {
+  if (!credentials) { log("❌ Genera credenciales primero", "error"); return; }
+
+  const choice = document.getElementById("voteChoice").value;
+  const root = contractStatus?.merkleRoot || "0";
+  const nullifierHash = credentials.nullifierHash;
+
+  // Dummy proof values (MockVerifier accepts anything)
+  const pA = [0, 0];
+  const pB = [[0, 0], [0, 0]];
+  const pC = [0, 0];
+
+  if (mode === "relayer") {
+    try {
+      const url = document.getElementById("relayerUrl").value;
+      log(`📤 Enviando voto (opción ${choice}) vía relayer...`, "info");
+      const resp = await fetch(url + "/api/relay-vote", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pA, pB, pC, root, nullifierHash, voteChoice: choice }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error);
+      log("🎉 ¡VOTO EMITIDO! TX: " + data.txHash, "success");
+    } catch (e) { log("❌ " + e.message, "error"); }
+  } else {
+    try {
+      if (!votingContract) { log("❌ Conecta MetaMask primero", "error"); return; }
+      log(`📤 Enviando voto (opción ${choice}) vía MetaMask...`, "info");
+      const tx = await votingContract.castVote(pA, pB, pC, root, nullifierHash, Number(choice));
+      log("⏳ TX: " + tx.hash, "info");
+      await tx.wait();
+      log("🎉 ¡VOTO EMITIDO!", "success");
+    } catch (e) { log("❌ " + e.message, "error"); }
+  }
+  refreshStatus();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Admin: Close Registration
+// ═══════════════════════════════════════════════════════════════
+async function closeRegistration() {
+  if (mode === "direct") {
+    if (!votingContract) { log("❌ Conecta MetaMask primero", "error"); return; }
+    try {
+      log("⏳ Cerrando registro...", "info");
+      const tx = await votingContract.closeRegistration();
+      await tx.wait();
+      log("✅ Registro cerrado!", "success");
+    } catch (e) { log("❌ " + e.message, "error"); }
+  } else {
+    log("⚠️ Cerrar registro requiere modo MetaMask directo con la cuenta admin", "error");
+  }
+  refreshStatus();
+}
+</script>
+</body>
+</html>
