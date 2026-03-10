@@ -264,7 +264,7 @@ flowchart LR
 
 1. **Deploy contracts in Remix** — compile `1_MockVerifier.sol`, `2_PoseidonT3Stub.sol`, and `3_ZKTimeDecayVoting.sol` (Solidity 0.8.20, optimiser 200 runs, EVM version `paris`) in that order. Deploy each to Sepolia via MetaMask and note all three contract addresses.
 
-2. **Configure the frontend** — open `remix/frontend_remix_demo.html` in a browser. Paste the `ZKTimeDecayVoting` and `PoseidonT3Stub` addresses, select *MetaMask (direct)* mode, and click **Connect**.
+2. **Configure the frontend** — open [fadechain frontend](https://jordilleopart.github.io/fadechain/) in a browser. Paste the `ZKTimeDecayVoting` and `PoseidonT3Stub` addresses, select *MetaMask (direct)* mode, and click **Connect**.
 
 3. **Register voters** — during the registration phase, click **Generate ZK Credentials** for each voter and save the displayed `nullifier`/`secret`. Click **Register Voter** to submit each commitment on-chain. When all voters are registered, the admin clicks **Close Registration** to freeze the Merkle root.
 
