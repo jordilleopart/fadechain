@@ -33,70 +33,196 @@ Deploying the logic as an **Ethereum smart contract** makes the rules immutable 
 
 ## Protocol
 
-### Phase 1 — Registration
-1. Each voter locally generates a random `nullifier` and `secret`.
-2. They compute `commitment = hash(nullifier, secret)` and submit it to the contract.
-3. The contract inserts the commitment as a leaf in an **incremental Merkle tree** (depth 20, ~1 M voters).
-4. The admin calls `closeRegistration()`, which freezes the Merkle root. No further registrations are accepted.
-
-### Phase 2 — Proof Generation (off-chain)
-5. The voter selects a vote choice and generates a **ZK proof** demonstrating: *"I know a `(nullifier, secret)` whose commitment is a leaf in the frozen Merkle tree"* — without revealing which leaf.
-6. The proof also binds the `nullifierHash = hash(nullifier)` and the chosen vote option.
-
-### Phase 3 — Vote Submission & Tallying
-7. The voter (or a relayer on their behalf) submits the proof, vote choice, and nullifier hash to the contract.
-8. The contract: (a) verifies the ZK proof, (b) checks the nullifier hash has not been used, (c) computes the vote weight from `block.timestamp`, (d) records the nullifier as spent, and (e) adds the weighted vote to the running tally.
-9. After `votingEnd`, the cumulative weighted tallies are permanently readable on-chain.
+### Phase 0 — Deployment
+1. The admin deploys the smart contract, setting `votingStart`, `votingEnd`, the number of candidate options, and all security parameters as **immutable** values. Nothing can be changed after this point.
 
 ```mermaid
-    flowchart TB
-        classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
-        classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
-        classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
-        classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
-        classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+---
+config:
+  layout: dagre
+---
+flowchart LR
+    classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
+    classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
+    classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
+    classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
+    classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+    F0(["⚙️ PHASE 0 · Deployment"]):::phase
+    F0 --> A["🏛️ Admin deploys smart contract · Voting start/end time · Candidate options · Immutable security parameters"]:::onchain
+    A --> F1(["🔐 PHASE 1 · Registration"]):::phase
+```
 
-        %% ─── PHASE 0 ───
-        F0(["⚙️ PHASE 0 · Deployment"]):::phase
-        F0 --> A["🏛️ Admin deploys smart contract · Voting start/end time · Candidate options · Immutable security parameters"]:::onchain
+### Phase 1 — Registration
+2. Each voter locally generates a random `nullifier` and `secret`.
+3. They compute `commitment = hash(nullifier, secret)` off-chain and submit it to the contract.
+4. The contract inserts the commitment as a leaf in an **incremental Merkle tree** (depth 20, ~1 M voters).
 
-        %% ─── PHASE 1 ───
-        A --> F1(["🔐 PHASE 1 · Registration"]):::phase
-        F1 --> B["🎲 Voter locally generates nullifier + secret"]:::offchain
-        B --> C["#️⃣ Computes commitment: hash(nullifier, secret)"]:::offchain
-        C --> D["📤 Sends commitment to contract on-chain"]:::onchain
-        D --> E["🌳 Commitment inserted into Merkle Tree"]:::onchain
+```mermaid
+---
+config:
+  layout: dagre
+---
+flowchart LR
+    classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
+    classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
+    classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
+    classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
+    classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+    F1(["🔐 PHASE 1 · Registration"]):::phase
+    F1 --> B["🎲 Voter locally generates nullifier + secret"]:::offchain
+    B --> C["#️⃣ Computes commitment: hash(nullifier, secret)"]:::offchain
+    C --> D["📤 Sends commitment to contract on-chain"]:::onchain
+    D --> E["🌳 Commitment inserted into Merkle Tree"]:::onchain
+    E --> F2(["🔒 PHASE 2 · Transition"]):::phase
+```
 
-        %% ─── PHASE 2 ───
-        E --> F2(["🔒 PHASE 2 · Transition"]):::phase
-        F2 --> F["❄️ Registration CLOSED · Merkle Root FROZEN"]:::onchain
+### Phase 2 — Transition
+5. The admin calls `closeRegistration()`, which freezes the Merkle root. No further registrations are accepted and the set of eligible voters is locked.
 
-        %% ─── PHASE 3 ───
-        F --> F3(["🧮 PHASE 3 · ZK Proof Generation (off-chain)"]):::phase
-        F3 --> G["🗳️ Voter selects their vote choice"]:::offchain
-        G --> H["⚡ Browser/client generates Zero-Knowledge Proof · Proves: commitment ∈ MerkleTree · Without revealing: voter identity"]:::offchain
+```mermaid
+---
+config:
+  layout: dagre
+---
+flowchart LR
+    classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
+    classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
+    classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
+    classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
+    classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+    F2(["🔒 PHASE 2 · Transition"]):::phase
+    F2 --> F["❄️ Registration CLOSED · Merkle Root FROZEN"]:::onchain
+    F --> F3(["🧮 PHASE 3 · ZK Proof Generation (off-chain)"]):::phase
+```
 
-        %% ─── PHASE 4 ───
-        H --> F4(["📡 PHASE 4 · Vote Submission"]):::phase
-        F4 --> I["🔁 Relayer receives ZK Proof + vote"]:::offchain
-        I --> J["📨 Relayer submits tx on-chain · pays gas fees · Voter wallet NOT linked to vote"]:::onchain
+### Phase 3 — ZK Proof Generation (off-chain)
+6. The voter selects a vote choice and their client generates a **ZK proof** demonstrating: *"I know a `(nullifier, secret)` whose commitment is a leaf in the frozen Merkle tree"* — without revealing which leaf or any identifying information.
 
-        %% ─── PHASE 5 ───
-        J --> F5(["✅ PHASE 5 · On-chain Verification"]):::phase
-        F5 --> K{{"🔍 Nullifier already used?"}}:::decision
-        K -- "Yes → Double vote" --> L["🚫 Transaction REJECTED"]:::result
-        K -- "No → Continue" --> M{{"🔬 ZK Proof valid?"}}:::decision
-        M -- "Invalid" --> N["🚫 Proof REJECTED"]:::result
-        M -- "Valid ✓" --> O["✅ Nullifier marked as spent"]:::onchain
+```mermaid
+---
+config:
+  layout: dagre
+---
+flowchart LR
+    classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
+    classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
+    classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
+    classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
+    classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+    F3(["🧮 PHASE 3 · ZK Proof Generation (off-chain)"]):::phase
+    F3 --> G["🗳️ Voter selects their vote choice"]:::offchain
+    G --> H["⚡ Browser/client generates Zero-Knowledge Proof · Proves: commitment ∈ MerkleTree · Without revealing: voter identity"]:::offchain
+    H --> F4(["📡 PHASE 4 · Vote Submission"]):::phase
+```
 
-        %% ─── PHASE 6 ───
-        O --> F6(["⏱️ PHASE 6 · Weighted Count with Temporal Decay"]):::phase
-        F6 --> P["⏰ Contract captures exact tx timestamp"]:::onchain
-        P --> Q["📉 Computes vote weight via decay function: w = f(t_vote, t_start, t_end)"]:::onchain
-        Q --> R["➕ Adds weighted vote to cumulative tally"]:::onchain
-        R --> S{{"⏳ Voting period still active?"}}:::decision
-        S -- "Yes" --> F3
-        S -- "No → End" --> T["📊 FINAL RESULTS · Public · Auditable · Immutable · Permanently on-chain"]:::result
+
+### Phase 4 — Vote Submission
+7. The voter passes the proof and vote choice to a **relayer**, which submits the transaction on-chain, pays the gas fees, and ensures the voter's wallet address is never linked to their vote.
+
+```mermaid
+---
+config:
+  layout: dagre
+---
+flowchart LR
+    classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
+    classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
+    classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
+    classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
+    classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+    F4(["📡 PHASE 4 · Vote Submission"]):::phase
+    F4 --> I["🔁 Relayer receives ZK Proof + vote"]:::offchain
+    I --> J["📨 Relayer submits tx on-chain · pays gas fees · Voter wallet NOT linked to vote"]:::onchain
+    J --> F5(["✅ PHASE 5 · On-chain Verification"]):::phase
+```
+
+### Phase 5 — On-chain Verification
+8. The contract checks whether the nullifier hash has already been used — if so, the transaction is rejected (double-vote prevention). It then verifies the ZK proof — if invalid, the proof is rejected. On success, the nullifier is marked as spent.
+
+```mermaid
+---
+config:
+  layout: dagre
+---
+flowchart LR
+    classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
+    classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
+    classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
+    classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
+    classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+    F5(["✅ PHASE 5 · On-chain Verification"]):::phase
+    F5 --> K{{"🔍 Nullifier already used?"}}:::decision
+    K -- "Yes → Double vote" --> L["🚫 Transaction REJECTED"]:::result
+    K -- "No → Continue" --> M{{"🔬 ZK Proof valid?"}}:::decision
+    M -- "Invalid" --> N["🚫 Proof REJECTED"]:::result
+    M -- "Valid ✓" --> O["✅ Nullifier marked as spent"]:::onchain
+    O --> F6(["⏱️ PHASE 6 · Weighted Count with Temporal Decay"]):::phase
+```
+
+### Phase 6 — Weighted Count
+9. The contract captures `block.timestamp` and computes the vote weight via the decay function `w = f(t_vote, t_start, t_end)`. The weighted vote is added to the cumulative tally. If the voting window is still open, further votes can be submitted (back to Phase 3); once `votingEnd` is reached, the final results are permanently recorded on-chain.
+
+```mermaid
+---
+config:
+  layout: dagre
+---
+flowchart LR
+    classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
+    classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
+    classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
+    classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
+    classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+    F6(["⏱️ PHASE 6 · Weighted Count with Temporal Decay"]):::phase
+    F6 --> P["⏰ Contract captures exact tx timestamp"]:::onchain
+    P --> Q["📉 Computes vote weight via decay function: w = f(t_vote, t_start, t_end)"]:::onchain
+    Q --> R["➕ Adds weighted vote to cumulative tally"]:::onchain
+    R --> S{{"⏳ Voting period still active?"}}:::decision
+    S -- "Yes" --> F3(["🧮 PHASE 3\nZK Proof Generation"]):::phase
+    S -- "No → End" --> T["📊 FINAL RESULTS · Public · Auditable · Immutable · Permanently on-chain"]:::result
+```
+
+#### Full Flow Diagram
+
+```mermaid
+---
+config:
+  layout: dagre
+---
+flowchart LR
+    classDef onchain fill:#0f2027,stroke:#00d4ff,stroke-width:2px,color:#e0f7ff
+    classDef offchain fill:#1a0a2e,stroke:#bf5fff,stroke-width:2px,color:#f0e0ff
+    classDef decision fill:#0d1f0d,stroke:#39ff14,stroke-width:2px,color:#ccffcc
+    classDef result fill:#1f0a0a,stroke:#ff4444,stroke-width:2px,color:#ffe0e0
+    classDef phase fill:#111,stroke:#555,stroke-width:1px,color:#aaa,font-style:italic
+    F0(["⚙️ PHASE 0\nDeployment"]):::phase
+    F0 --> A["🏛️ Admin deploys contract\nstart/end time · candidates\nimmutable params"]:::onchain
+    A --> F1(["🔐 PHASE 1\nRegistration"]):::phase
+    F1 --> B["🎲 Generate\nnullifier + secret"]:::offchain
+    B --> C["#️⃣ Compute commitment\nhash(nullifier, secret)"]:::offchain
+    C --> D["📤 Submit commitment\non-chain"]:::onchain
+    D --> E["🌳 Insert into\nMerkle Tree"]:::onchain
+    E --> F2(["🔒 PHASE 2\nTransition"]):::phase
+    F2 --> F["❄️ Registration CLOSED\nMerkle Root FROZEN"]:::onchain
+    F --> F3(["🧮 PHASE 3\nZK Proof Generation"]):::phase
+    F3 --> G["🗳️ Select\nvote choice"]:::offchain
+    G --> H["⚡ Generate ZK Proof\ncommitment ∈ MerkleTree\nidentity hidden"]:::offchain
+    H --> F4(["📡 PHASE 4\nVote Submission"]):::phase
+    F4 --> I["🔁 Relayer receives\nZK Proof + vote"]:::offchain
+    I --> J["📨 Relayer submits tx\npays gas · wallet\nnot linked to vote"]:::onchain
+    J --> F5(["✅ PHASE 5\nOn-chain Verification"]):::phase
+    F5 --> K{{"🔍 Nullifier\nalready used?"}}:::decision
+    K -- "Yes" --> L["🚫 TX\nREJECTED"]:::result
+    K -- "No" --> M{{"🔬 ZK Proof\nvalid?"}}:::decision
+    M -- "Invalid" --> N["🚫 Proof\nREJECTED"]:::result
+    M -- "Valid ✓" --> O["✅ Nullifier\nmarked spent"]:::onchain
+    O --> F6(["⏱️ PHASE 6\nWeighted Count"]):::phase
+    F6 --> P["⏰ Capture\ntx timestamp"]:::onchain
+    P --> Q["📉 Compute weight\nw = f(t_vote, t_start, t_end)"]:::onchain
+    Q --> R["➕ Add weighted vote\nto tally"]:::onchain
+    R --> S{{"⏳ Voting\nstill active?"}}:::decision
+    S -- "Yes" --> F3
+    S -- "No" --> T["📊 FINAL RESULTS\nPublic · Auditable\nImmutable · On-chain"]:::result
 ```
 
 ### Failure cases
@@ -149,5 +275,4 @@ Deploying the logic as an **Ethereum smart contract** makes the rules immutable 
 > **Note:** The demo uses a `MockGroth16Verifier` that always returns `true`, enabling a full end-to-end flow without running the Circom circuit or a trusted setup ceremony. For production use, compile `circuits/vote.circom` with `circom` + `snarkjs`, run the two-phase trusted setup, and replace the mock verifier with the exported `Groth16Verifier.sol`.
 
 ---
-
 *FadeChain — UPF Hackathon 2026, Cryptography & Security. Team: Gorka Hernandez · Sara López · Arnau Carbonell · Jordi Lleopart.*
